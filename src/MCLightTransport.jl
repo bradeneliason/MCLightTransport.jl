@@ -1,5 +1,10 @@
 module MCLightTransport
 
-# Write your package code here.
+    using StaticArrays
 
-end
+    include("absorbers.jl")
+    include("emitters.jl")
+    include("photon.jl")
+    include("simulate.jl")
+
+end # module
