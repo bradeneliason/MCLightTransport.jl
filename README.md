@@ -10,6 +10,7 @@ This is an initial release so the feature list is limited.
 
  * Emitters
     - Ray emitter which emits photons from the same point and trajectory
+    - PointSource which emits photons from a point with a random trajectory
  * Absorbers
     - CatesianVolume which is a 3D cartesian grid to track photon absorption
 
@@ -23,7 +24,8 @@ This is an initial release so the feature list is limited.
  * Performance
     - Reduce allocations
     - Parrelization
+ * Module tests
 
 ## Acknowledgements
 
-This pacakge is based on the mc123.c by Steven L. Jacques. 
+This pacakge is based on mc123.c by Steven L. Jacques. 
