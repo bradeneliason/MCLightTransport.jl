@@ -1,27 +1,13 @@
-using StaticArrays
-
 abstract type Absorber end
 
-# TODO: put optical properties in absorber
-# struct CatesianVolume{T <: Real} <: Absorber
-#     corner1 :: SVector{3,T}
-#     corner2 :: SVector{3,T}
-#     d_xyz :: SVector{3,T}
-#     Δxyz :: SVector{3,T}
-#     Nxyz :: SVector{3,Integer}
-#     # prop :: SVector{5,T}
-#     # prop :: SVector{5,T}
-#     data :: SizedArray{Tuple, T}
-#     function CatesianVolume(corner1::Vector{T}, corner2::Vector{T}, d_xyz::Vector{T}) where {T<:Real} #, prop::Vector{T}
-#         corner1 = SVector{3,T}(corner1)
-#         corner2 = SVector{3,T}(corner2)
-#         Δxyz = SVector{3,T}(corner2 - corner1)
-#         Nxyz = SVector{3,Integer}(Int.(round.(Δxyz ./ d_xyz)))
-#         data = SizedArray{Tuple{Nxyz...}, T}(zeros(Nxyz...))
-#         # prop = SVector{5,T}(prop)
-#         new{T}(corner1, corner2, d_xyz, Δxyz, Nxyz, data) #prop
-#     end
-# end
+struct AbsorberProperties{T <: Real}
+    μ_a :: T
+    μ_s :: T
+    g   :: T
+    nt  :: T
+    albedo :: T
+end
+AbsorberProperties(μ_a, μ_s, g, nt) = AbsorberProperties(μ_a, μ_s, g, nt, μ_s/(μ_s + μ_a))
 
 struct CatesianVolume{T <: Real} <: Absorber
     corner1 :: SVector{3,T}
@@ -29,19 +15,28 @@ struct CatesianVolume{T <: Real} <: Absorber
     d_xyz :: SVector{3,T}
     Δxyz :: SVector{3,T}
     Nxyz :: SVector{3,Integer}
+    prop :: AbsorberProperties
     # data :: SizedArray{Tuple, T}
-    prop :: SVector{5,T}
     data
     function CatesianVolume(corner1::Vector{T}, corner2::Vector{T}, d_xyz::Vector{T}, prop::Vector{T}) where {T<:Real}
         corner1 = SVector{3,T}(corner1)
         corner2 = SVector{3,T}(corner2)
         Δxyz = SVector{3,T}(corner2 - corner1)
         Nxyz = SVector{3,Integer}(Int.(round.(Δxyz ./ d_xyz)))
-        prop = SVector{5,T}(prop)
+        prop = AbsorberProperties(prop[1], prop[2], prop[3], prop[4])
         data = SizedArray{Tuple{Nxyz...}, T}(zeros(Nxyz...))
         new{T}(corner1, corner2, d_xyz, Δxyz, Nxyz, prop, data)
     end
 end
+CatesianVolume(lower::T, upper::T, dxyz::T, prop::Vector) where T <: Real = CatesianVolume(
+    lower*ones(3),
+    upper*ones(3),
+    dxyz* ones(3),
+    prop
+)
+CatesianVolume(lower::Real, upper::Real, dxyz::Real, prop::Vector) = CatesianVolume(
+    promote(lower*ones(3),  upper*ones(3),  dxyz* ones(3),  prop)...
+)
 
 
 struct RadialVolume{T <: Real} <: Absorber
@@ -58,5 +53,3 @@ struct RadialVolume{T <: Real} <: Absorber
         new{T}(r1, r2, dr, Δr, Nr, data)
     end
 end
-
-export CatesianVolume, RadialVolume

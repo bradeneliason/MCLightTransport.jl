@@ -1,40 +1,31 @@
-using LinearAlgebra: norm
-
-const ONE_MINUS_COSZERO = 1.0E-12 # TODO: figure out why this is used
+const ONE_MINUS_COSZERO = 1.0E-12
 const THRESHOLD = 0.01
 const CHANCE = 0.1 
 
-get_index(y, b, m) = Int(round((y - b) / m))
+function nearest_index(x, lower, step, N)
+    i = Int(round((x - lower) / step))
 
-function binoverflow(i, N)
+    # Overflow conditions
     i < 1 && (return 1)
     i > N && (return N)
-    i
+    return i
 end
+
 
 ## TODO: fix this function to remove allocations
 function absorb!(p::Photon, v::CatesianVolume, a)
     p.weight -= a
-    indices = get_index.(p.pos, v.corner1, v.d_xyz)
-    i,j,k = binoverflow.(indices, v.Nxyz)
-    @inbounds v.data[i,j,k] += a 
+    indices = nearest_index.(p.pos, v.corner1, v.d_xyz, v.Nxyz)
+    @inbounds v.data[indices...] += a 
     nothing
 end
 
 function absorb!(p::Photon, v::RadialVolume, a)
     p.weight -= a
     pr = norm(p.pos)
-    i = get_index.(pr, v.r1, v.dr)
-    i = binoverflow.(i, v.Nr)
+    i = nearest_index.(pr, v.r1, v.dr, v.Nr)
     @inbounds v.data[i] += a 
     nothing
-end
-
-function random_traj()
-    cosθ = 2.0*rand() - 1.0   
-    sinθ = sqrt(1.0 - cosθ^2) # sinθ is always positive
-    sinψ, cosψ = sincos(2π * rand())
-    return [sinθ * cosψ, sinθ * sinψ, cosθ]
 end
 
 function hop!(p::Photon, s)
@@ -50,8 +41,9 @@ function scatterHG(rnd, g)
     cosθ = (1.0 + g^2 - temp^2)/(2.0*g)
 end
 
-function spin!(p::Photon)
-    cosθ = scatterHG(rand(), g) # Sample a random cos(θ) from Henyey-Greenstein scattering function, inverted function
+function spin!(p::Photon, g::Real)
+    # Sample a random cos(θ) from Henyey-Greenstein scattering function, inverted function
+    cosθ = scatterHG(rand(), g) 
     sinθ = sqrt(1.0 - cosθ^2)   # sqrt() is faster than sin(). 
     
     sinψ, cosψ = sincos(2π*rand()) # Sample psi 
@@ -88,25 +80,21 @@ function roulette!(p::Photon)
 end
 
 # TODO: make this function parallelizable
-# TODO: make soure types
 function simulate!(volume::Absorber, e::Emitter, num_photons)
-    hop_function() = -log(rand())/(volume.prop[1] + volume.prop[2])
+    hopdist() = -log(rand())/(volume.prop.μ_a + volume.prop.μ_s)
 
     for i = 1:num_photons
-        # simulating photons emitted in line
         phot = makephoton(e)
         # tmp1 = SVector{3, Int32}([1,1,1])
+        
         while phot.live
-            s = -log(rand())/(μ_a + μ_s)
-            a = phot.weight*(1 - albedo)
+            a = phot.weight*(1 - volume.prop.albedo)
     
-            hop!(phot, s)
+            hop!(phot, hopdist())
             absorb!(phot, volume, a)
-            spin!(phot)
+            spin!(phot, volume.prop.g)
             roulette!(phot)
         end
     end
     return volume
 end
-
-export simulate!

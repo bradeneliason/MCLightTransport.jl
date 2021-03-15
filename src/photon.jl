@@ -26,5 +26,3 @@ Photon(src::Vector{Float64}) = Photon(
 Photon(src::SVector{3,Float64}, trj::SVector{3,Float64}) = Photon(
    src, trj, 1.0, true
 )
-
-export Photon
