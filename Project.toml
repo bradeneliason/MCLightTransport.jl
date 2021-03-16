@@ -1,6 +1,6 @@
 name = "MCLightTransport"
 uuid = "b82e34d3-41f5-43e4-ae67-09331cb14329"
-authors = ["bradeneliason <braden.eliason@gmail.com> and contributors"]
+authors = ["bradeneliason <github@bradeneliason.com> and contributors"]
 version = "0.1.0"
 
 [deps]
